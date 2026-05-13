@@ -11,7 +11,7 @@ const router = express.Router();
 // 
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, invitationToken } = req.body;
 
     // checkitems
     if (!name || !email || !password) {
@@ -28,7 +28,7 @@ router.post('/register', async (req, res) => {
     }
 
     // check alrd-user with this email
-    const existingUser = await pool.query(
+    const existingUser = await pool.query( 
       'SELECT * FROM users WHERE email = $1', 
       [email]
     );
@@ -39,19 +39,28 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // check list with teachers
-    const teacherCheck = await pool.query(
-      'SELECT * FROM authorized_teachers WHERE email = $1 AND is_used = false',
-      [email]
-    );
+// checkinvitationtoken Default:Student || inv-> Teacher
+    if (invitationToken) {
+      const tokenCheck = await pool.query(
+        `SELECT * FROM authorized_teachers 
+        WHERE email = $1 AND invitation_token = $2 AND is_used = false`,
+        [email, invitationToken]
+      );
 
-    // if teacher or student
-    const userRole = teacherCheck.rows.length > 0 ? 'teacher' : 'student';
+      if (tokenCheck.rows.length === 0) {
+        return res.status(400).json({
+          error: 'Μη έγκυρο token ή έχει ήδη χρησιμοποιηθεί'
+        });
+      }
 
-    // cryptopass
+      userRole = 'teacher';
+    }
+
+
+    // cryptopassword
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // saveuser autorole
+    // saveuser
     const newUser = await pool.query(
       `INSERT INTO users (name, email, password, role) 
        VALUES ($1, $2, $3, $4) 
@@ -59,7 +68,7 @@ router.post('/register', async (req, res) => {
       [name, email, hashedPassword, userRole]
     );
 
-    // refresh teacher status
+    // refresh teacher status mark token
     if (userRole === 'teacher') {
       await pool.query(
         'UPDATE authorized_teachers SET is_used = true WHERE email = $1',
@@ -87,7 +96,7 @@ router.post('/login', async (req, res) => {
     // checkitems
     if (!email || !password) {
       return res.status(400).json({ 
-        error: 'Email και κωδικός είναι υποχρεωτικά' 
+        error: 'Email και κωδικός είναι υποχρεωτικά πεδία' 
       });
     }
 
@@ -105,7 +114,7 @@ router.post('/login', async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // passcheck
+    // password check
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {

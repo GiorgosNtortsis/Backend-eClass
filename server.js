@@ -1,8 +1,9 @@
 const express=require('express');
 const cors=require('cors');
-require('dotenv').config({path: '..\env'});
+require('dotenv').config({path: '../.env'});
 
 const pool=require('./db');
+const authRoutes = require('./routes/auth');
 
 const app=express();
 const PORT=process.env.PORT || 3000;
@@ -11,7 +12,10 @@ const PORT=process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-//TSTRT
+// ROUTES
+app.use('/api/auth', authRoutes);
+
+//TSTDBRT
 app.get('/',(req, res)=>{
     res.send('Welcome to eClass');
 });
@@ -31,7 +35,7 @@ app.get('/test-db',async(req,res)=>{
     }
 });
 
-//STRTSRV
+//STARTSRV
 app.listen(PORT,()=>{
     console.log(`Server is running on port http://localhost:${PORT}`);
 });
