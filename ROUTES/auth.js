@@ -27,6 +27,7 @@ router.post('/register', async (req, res) => {
       });
     }
 
+
     // check alrd-user with this email
     const existingUser = await pool.query( 
       'SELECT * FROM users WHERE email = $1', 
@@ -39,23 +40,34 @@ router.post('/register', async (req, res) => {
       });
     }
 
-// checkinvitationtoken Default:Student || inv-> Teacher
-    if (invitationToken) {
-      const tokenCheck = await pool.query(
-        `SELECT * FROM authorized_teachers 
-        WHERE email = $1 AND invitation_token = $2 AND is_used = false`,
-        [email, invitationToken]
-      );
+    // Email check ++ role assign
+      const emailDomain = email.split('@')[1];
+      
+      let userRole;
+      if(invitationToken) {
+        if (emailDomain !== 'uni.gr'){
+          return res.status(400).json({ error: 'Email μόνο με κατάληξη uni.gr για καθηγητές' });
+        }
 
-      if (tokenCheck.rows.length === 0) {
-        return res.status(400).json({
-          error: 'Μη έγκυρο token ή έχει ήδη χρησιμοποιηθεί'
-        });
+        const tokenCheck = await pool.query(
+          `SELECT * FROM authorized_teachers
+          WHERE email= $1 AND invitation token= $2 and is_used= false`
+          [email, invitationToken]
+        );
+          
+        if (tokenCheck.rows.length === 0) {
+          return res.status(400).json({ error: 'Μη έγκυρο token'});
+        }
+
+        userRole= 'teacher';
+
+      } else{
+        if (emailDomain === 'uni.gr'){
+          return res.status(400).json ({error: 'Email με κατάληξη students.uni.gr για φοιτητές'});
+        }
+        userRole= 'student';
       }
-
-      userRole = 'teacher';
-    }
-
+         
 
     // cryptopassword
     const hashedPassword = await bcrypt.hash(password, 10);
