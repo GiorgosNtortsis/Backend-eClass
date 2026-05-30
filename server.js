@@ -1,19 +1,21 @@
-const express=require('express');
-const cors=require('cors');
+const express= require('express');
+const cors= require('cors');
 require('dotenv').config({path: '../.env'});
 
 const pool=require('./db');
 const authRoutes = require('./routes/auth');
+const teacherRoutes= require('./routes/teacher');
 
 const app=express();
 const PORT=process.env.PORT || 3000;
 
-// MDWR
+// MDLWR
 app.use(cors());
 app.use(express.json());
 
 // ROUTES
 app.use('/api/auth', authRoutes);
+app.use('/api/teacher', teacherRoutes);
 
 //TSTDBRT
 app.get('/',(req, res)=>{

@@ -51,7 +51,7 @@ router.post('/register', async (req, res) => {
 
         const tokenCheck = await pool.query(
           `SELECT * FROM authorized_teachers
-          WHERE email= $1 AND invitation token= $2 and is_used= false`
+          WHERE email= $1 AND invitation_token= $2 and is_used= false`,
           [email, invitationToken]
         );
           
